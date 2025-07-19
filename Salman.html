@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İREM için Özel Kalp</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Brush Script MT', cursive;
+        }
+        canvas {
+            display: block;
+        }
+        .text {
+            position: absolute;
+            color: white;
+            font-size: 4rem;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="text">İREM</div>
+    <canvas id="heartCanvas"></canvas>
+
+    <script>
+        // Canvas ayarları
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        const textElement = document.querySelector('.text');
+        
+        // Boyut ayarları
+        function resizeCanvas() {
+            const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Yazıyı ortala
+            textElement.style.top = `${canvas.offsetTop + canvas.height / 2}px`;
+            textElement.style.left = `${canvas.offsetLeft + canvas.width / 2}px`;
+            textElement.style.transform = 'translate(-50%, -50%)';
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Animasyon değişkenleri
+        let animationStep = 0;
+        const maxSteps = 180;
+        let heartPoints = [];
+        const heartColor = '#ff69b4';
+        
+        // Kalp şekli için noktalar oluştur
+        function createHeartPoints() {
+            const points = [];
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const size = canvas.width * 0.45;
+            
+            for (let i = 0; i < 360; i += 5) {
+                const angle = (i * Math.PI) / 180;
+                const x = 16 * Math.pow(Math.sin(angle), 3);
+                const y = -(13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 
+                          2 * Math.cos(3 * angle) - Math.cos(4 * angle));
+                
+                points.push({
+                    x: centerX + x * size / 16,
+                    y: centerY + y * size / 16,
+                    angle: i,
+                    visible: false
+                });
+            }
+            
+            return points;
+        }
+        
+        // Başlangıçta kalp noktalarını oluştur
+        heartPoints = createHeartPoints();
+        
+        // Yazı animasyonu
+        function animateText() {
+            if (animationStep < 30) {
+                // Yazıyı yavaşça görünür yap
+                textElement.style.opacity = animationStep / 30;
+            } else if (animationStep > 100) {
+                // Kalp oluştukça yazıyı kaybet
+                const fadeProgress = (animationStep - 100) / (maxSteps - 100);
+                textElement.style.opacity = 1 - fadeProgress;
+            }
+        }
+        
+        // Kalp animasyonu
+        function animateHeart() {
+            if (animationStep >= 30 && animationStep < maxSteps) {
+                const progress = (animationStep - 30) / (maxSteps - 30);
+                const visiblePoints = Math.floor(heartPoints.length * progress);
+                
+                for (let i = 0; i < heartPoints.length; i++) {
+                    heartPoints[i].visible = i <= visiblePoints;
+                }
+            }
+        }
+        
+        // Kalbi çiz
+        function drawHeart() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (animationStep >= 30) {
+                ctx.beginPath();
+                let firstVisiblePoint = null;
+                
+                // Görünür noktaları bul
+                for (let i = 0; i < heartPoints.length; i++) {
+                    if (heartPoints[i].visible) {
+                        if (!firstVisiblePoint) {
+                            firstVisiblePoint = heartPoints[i];
+                            ctx.moveTo(firstVisiblePoint.x, firstVisiblePoint.y);
+                        } else {
+                            ctx.lineTo(heartPoints[i].x, heartPoints[i].y);
+                        }
+                    }
+                }
+                
+                // Kalp dolgusunu çiz
+                if (firstVisiblePoint) {
+                    ctx.closePath();
+                    ctx.fillStyle = heartColor;
+                    ctx.globalAlpha = 0.8;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    
+                    // Kalp çizgisi
+                    ctx.strokeStyle = '#ff1493';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        // Ana animasyon döngüsü
+        function animate() {
+            animateText();
+            animateHeart();
+            drawHeart();
+            
+            animationStep++;
+            
+            if (animationStep < maxSteps + 30) {
+                requestAnimationFrame(animate);
+            }
+        }
+        
+        // Sayfa yüklendiğinde animasyonu başlat
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                animate();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
